@@ -1,0 +1,11 @@
+venv/
+__pycache__/
+*.pyc
+*.pyo
+db.sqlite3
+media/
+.env
+node_modules/
+package.json
+package-lock.json
+staticfiles/
