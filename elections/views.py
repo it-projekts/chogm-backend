@@ -371,7 +371,7 @@ class VoterRegisterListCreateView(generics.ListCreateAPIView):
 
     def perform_create(self, serializer):
         instance = serializer.save()
-        log_action('election_created', user=self.request.user,
+        log_action('voter_registered', user=self.request.user,
                    username=self.request.user.username,
                    ip=get_client_ip(self.request),
                    details=f'Voter "{instance.full_name}" added to register with code {instance.secret_code}')
@@ -388,6 +388,25 @@ class VoterRegisterDetailView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [IsAdminUser]
     serializer_class = VoterRegisterSerializer
     queryset = VoterRegister.objects.all()
+
+    def destroy(self, request, *args, **kwargs):
+        try:
+            instance = self.get_object()
+            full_name = instance.full_name
+            # Delete votes by this user first
+            if instance.registered_user:
+                Vote.objects.filter(voter=instance.registered_user).delete()
+                # Delete the linked user account
+                instance.registered_user.delete()
+            # Delete the voter register entry
+            instance.delete()
+            log_action('voter_deactivated', user=request.user,
+                       username=request.user.username,
+                       ip=get_client_ip(request),
+                       details=f'Voter "{full_name}" permanently deleted from register')
+            return Response({'message': 'Voter deleted successfully'}, status=204)
+        except Exception as e:
+            return Response({'error': str(e)}, status=500)
 
 
 class BulkVoterUploadView(APIView):
