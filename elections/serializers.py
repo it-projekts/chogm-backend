@@ -63,10 +63,20 @@ class CandidateSerializer(serializers.ModelSerializer):
         return obj.votes.count()
 
     def get_photo_url(self, obj):
-        request = self.context.get('request')
-        if obj.photo and request:
-            return request.build_absolute_uri(obj.photo.url)
-        return None
+        if not obj.photo:
+            return None
+        try:
+            # Cloudinary returns full URL directly
+            url = str(obj.photo.url)
+            if url.startswith('http'):
+                return url
+            # Fallback for local development
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(url)
+            return url
+        except Exception:
+            return None
 
 
 class ElectionSerializer(serializers.ModelSerializer):

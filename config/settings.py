@@ -24,11 +24,23 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'cloudinary_storage',
+    'cloudinary',
     'rest_framework',
     'corsheaders',
     'accounts',
     'elections',
 ]
+# Cloudinary
+import cloudinary
+import cloudinary.uploader
+import cloudinary.api
+
+cloudinary.config(
+    cloud_name=os.environ.get('CLOUDINARY_CLOUD_NAME', ''),
+    api_key=os.environ.get('CLOUDINARY_API_KEY', ''),
+    api_secret=os.environ.get('CLOUDINARY_API_SECRET', ''),
+)
 
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
@@ -121,11 +133,12 @@ STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
-# Media files
-MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
-
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+# Media files - use Cloudinary in production
+if os.environ.get('CLOUDINARY_CLOUD_NAME'):
+    DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+else:
+    MEDIA_URL = '/media/'
+    MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # Twilio SMS
 TWILIO_ACCOUNT_SID = os.environ.get('TWILIO_ACCOUNT_SID', '')
