@@ -281,17 +281,33 @@ class CandidateListCreateView(generics.ListCreateAPIView):
     def create(self, request, *args, **kwargs):
         try:
             photo_url_direct = request.data.get('photo_url_direct', None)
+            print(f"DEBUG: photo_url_direct received = {photo_url_direct}")
+
             serializer = self.get_serializer(data=request.data)
             serializer.is_valid(raise_exception=True)
             candidate = serializer.save()
+
+            print(f"DEBUG: candidate saved id={candidate.id}")
+            print(f"DEBUG: photo_url_direct before update = {candidate.photo_url_direct}")
+
             if photo_url_direct:
-                candidate.photo_url_direct = photo_url_direct
-                candidate.save()
-            return Response(
-                CandidateSerializer(candidate, context={'request': request}).data,
-                status=status.HTTP_201_CREATED
-            )
+                Candidate.objects.filter(pk=candidate.pk).update(
+                    photo_url_direct=photo_url_direct
+                )
+                candidate.refresh_from_db()
+                print(f"DEBUG: photo_url_direct after update = {candidate.photo_url_direct}")
+
+            response_data = CandidateSerializer(
+                candidate, context={'request': request}
+            ).data
+            print(f"DEBUG: response photo_url = {response_data.get('photo_url')}")
+            print(f"DEBUG: response photo_url_direct = {response_data.get('photo_url_direct')}")
+
+            return Response(response_data, status=status.HTTP_201_CREATED)
         except Exception as e:
+            print(f"DEBUG: Error = {str(e)}")
+            import traceback
+            traceback.print_exc()
             return Response({'error': str(e)}, status=500)
 
 
@@ -390,7 +406,7 @@ class VoterRegisterListCreateView(generics.ListCreateAPIView):
         log_action('voter_registered', user=self.request.user,
                    username=self.request.user.username,
                    ip=get_client_ip(self.request),
-                   details=f'Voter "{instance.full_name}" added to register with code {instance.secret_code}')
+                   details=f'Voter "{instance.full_name}" added to register')
         phone = instance.phone_number
         message = (
             f"Hello {instance.full_name},\n"
@@ -409,17 +425,14 @@ class VoterRegisterDetailView(generics.RetrieveUpdateDestroyAPIView):
         try:
             instance = self.get_object()
             full_name = instance.full_name
-            # Delete votes by this user first
             if instance.registered_user:
                 Vote.objects.filter(voter=instance.registered_user).delete()
-                # Delete the linked user account
                 instance.registered_user.delete()
-            # Delete the voter register entry
             instance.delete()
             log_action('voter_deactivated', user=request.user,
                        username=request.user.username,
                        ip=get_client_ip(request),
-                       details=f'Voter "{full_name}" permanently deleted from register')
+                       details=f'Voter "{full_name}" permanently deleted')
             return Response({'message': 'Voter deleted successfully'}, status=204)
         except Exception as e:
             return Response({'error': str(e)}, status=500)
