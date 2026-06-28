@@ -59,6 +59,7 @@ class CandidateSerializer(serializers.ModelSerializer):
         fields = ['id', 'election', 'full_name', 'party', 'bio',
                   'photo', 'photo_url_direct', 'photo_url',
                   'display_order', 'vote_count']
+        read_only_fields = ['vote_count', 'photo_url']
 
     def get_vote_count(self, obj):
         return obj.votes.count()
