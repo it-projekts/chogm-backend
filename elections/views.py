@@ -278,6 +278,22 @@ class CandidateListCreateView(generics.ListCreateAPIView):
     def get_serializer_context(self):
         return {'request': self.request}
 
+    def create(self, request, *args, **kwargs):
+        try:
+            photo_url_direct = request.data.get('photo_url_direct', None)
+            serializer = self.get_serializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            candidate = serializer.save()
+            if photo_url_direct:
+                candidate.photo_url_direct = photo_url_direct
+                candidate.save()
+            return Response(
+                CandidateSerializer(candidate, context={'request': request}).data,
+                status=status.HTTP_201_CREATED
+            )
+        except Exception as e:
+            return Response({'error': str(e)}, status=500)
+
 
 class CandidateDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Candidate.objects.all()

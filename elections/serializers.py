@@ -62,6 +62,9 @@ class CandidateSerializer(serializers.ModelSerializer):
         fields = ['id', 'election', 'full_name', 'party', 'bio',
                   'photo', 'photo_url_direct', 'photo_url',
                   'display_order', 'vote_count']
+        extra_kwargs = {
+            'photo': {'required': False, 'allow_null': True},
+        }
 
     def get_vote_count(self, obj):
         return obj.votes.count()
@@ -81,6 +84,14 @@ class CandidateSerializer(serializers.ModelSerializer):
             return url
         except Exception:
             return None
+
+    def create(self, validated_data):
+        photo_url_direct = validated_data.get('photo_url_direct', None)
+        instance = super().create(validated_data)
+        if photo_url_direct:
+            instance.photo_url_direct = photo_url_direct
+            instance.save()
+        return instance
 
 
 class ElectionSerializer(serializers.ModelSerializer):
