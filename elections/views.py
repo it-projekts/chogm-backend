@@ -278,38 +278,6 @@ class CandidateListCreateView(generics.ListCreateAPIView):
     def get_serializer_context(self):
         return {'request': self.request}
 
-    def create(self, request, *args, **kwargs):
-        try:
-            photo_url_direct = request.data.get('photo_url_direct', None)
-            print(f"DEBUG: photo_url_direct received = {photo_url_direct}")
-
-            serializer = self.get_serializer(data=request.data)
-            serializer.is_valid(raise_exception=True)
-            candidate = serializer.save()
-
-            print(f"DEBUG: candidate saved id={candidate.id}")
-            print(f"DEBUG: photo_url_direct before update = {candidate.photo_url_direct}")
-
-            if photo_url_direct:
-                Candidate.objects.filter(pk=candidate.pk).update(
-                    photo_url_direct=photo_url_direct
-                )
-                candidate.refresh_from_db()
-                print(f"DEBUG: photo_url_direct after update = {candidate.photo_url_direct}")
-
-            response_data = CandidateSerializer(
-                candidate, context={'request': request}
-            ).data
-            print(f"DEBUG: response photo_url = {response_data.get('photo_url')}")
-            print(f"DEBUG: response photo_url_direct = {response_data.get('photo_url_direct')}")
-
-            return Response(response_data, status=status.HTTP_201_CREATED)
-        except Exception as e:
-            print(f"DEBUG: Error = {str(e)}")
-            import traceback
-            traceback.print_exc()
-            return Response({'error': str(e)}, status=500)
-
 
 class CandidateDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Candidate.objects.all()
@@ -322,6 +290,31 @@ class CandidateDetailView(generics.RetrieveUpdateDestroyAPIView):
 
     def get_serializer_context(self):
         return {'request': self.request}
+
+
+class UpdateCandidatePhotoView(APIView):
+    permission_classes = [IsAdminUser]
+
+    def post(self, request, pk):
+        try:
+            photo_url = request.data.get('photo_url_direct', '')
+            print(f"UpdatePhoto: pk={pk}, url={photo_url}")
+            rows = Candidate.objects.filter(pk=pk).update(
+                photo_url_direct=photo_url
+            )
+            print(f"UpdatePhoto: rows updated={rows}")
+            candidate = Candidate.objects.get(pk=pk)
+            print(f"UpdatePhoto: saved value={candidate.photo_url_direct}")
+            return Response({
+                'message': 'Photo updated successfully',
+                'photo_url_direct': candidate.photo_url_direct,
+                'photo_url': candidate.photo_url_direct,
+            })
+        except Candidate.DoesNotExist:
+            return Response({'error': 'Candidate not found'}, status=404)
+        except Exception as e:
+            print(f"UpdatePhoto Error: {e}")
+            return Response({'error': str(e)}, status=500)
 
 
 class CastVoteView(APIView):

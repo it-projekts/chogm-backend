@@ -9,6 +9,8 @@ urlpatterns = [
     path('auth/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('auth/profile/', views.ProfileView.as_view(), name='profile'),
     path('auth/change-password/', views.ChangePasswordView.as_view(), name='change-password'),
+    path('candidates/<int:pk>/photo/', views.UpdateCandidatePhotoView.as_view(), name='candidate-photo'),
+
 
     path('elections/', views.ElectionListCreateView.as_view(), name='elections'),
     path('elections/<int:pk>/', views.ElectionDetailView.as_view(), name='election-detail'),
