@@ -57,20 +57,23 @@ class CandidateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Candidate
         fields = ['id', 'election', 'full_name', 'party', 'bio',
-                  'photo', 'photo_url', 'display_order', 'vote_count']
+                  'photo', 'photo_url_direct', 'photo_url',
+                  'display_order', 'vote_count']
 
     def get_vote_count(self, obj):
         return obj.votes.count()
 
     def get_photo_url(self, obj):
+        # First check direct Cloudinary URL (uploaded from frontend)
+        if obj.photo_url_direct:
+            return obj.photo_url_direct
+        # Fallback to file upload
         if not obj.photo:
             return None
         try:
-            # Cloudinary returns full URL directly
             url = str(obj.photo.url)
             if url.startswith('http'):
                 return url
-            # Fallback for local development
             request = self.context.get('request')
             if request:
                 return request.build_absolute_uri(url)

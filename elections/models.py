@@ -61,6 +61,7 @@ class Candidate(models.Model):
     party = models.CharField(max_length=100, blank=True)
     bio = models.TextField(blank=True)
     photo = models.ImageField(upload_to='candidates/', blank=True, null=True)
+    photo_url_direct = models.URLField(max_length=500, blank=True, null=True)
     display_order = models.IntegerField(default=0)
 
     class Meta:
