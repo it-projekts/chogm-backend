@@ -53,22 +53,22 @@ class VoterRegisterSerializer(serializers.ModelSerializer):
 class CandidateSerializer(serializers.ModelSerializer):
     vote_count = serializers.SerializerMethodField()
     photo_url = serializers.SerializerMethodField()
+    photo_url_direct = serializers.CharField(
+        max_length=500, required=False, allow_null=True, allow_blank=True
+    )
 
     class Meta:
         model = Candidate
         fields = ['id', 'election', 'full_name', 'party', 'bio',
                   'photo', 'photo_url_direct', 'photo_url',
                   'display_order', 'vote_count']
-        read_only_fields = ['vote_count', 'photo_url']
 
     def get_vote_count(self, obj):
         return obj.votes.count()
 
     def get_photo_url(self, obj):
-        # First check direct Cloudinary URL (uploaded from frontend)
         if obj.photo_url_direct:
             return obj.photo_url_direct
-        # Fallback to file upload
         if not obj.photo:
             return None
         try:
