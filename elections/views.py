@@ -297,21 +297,27 @@ class UpdateCandidatePhotoView(APIView):
 
     def post(self, request, pk):
         try:
+            from django.db import connection
             photo_url = request.data.get('photo_url_direct', '')
             print(f"UpdatePhoto: pk={pk}, url={photo_url}")
-            rows = Candidate.objects.filter(pk=pk).update(
-                photo_url_direct=photo_url
-            )
-            print(f"UpdatePhoto: rows updated={rows}")
-            candidate = Candidate.objects.get(pk=pk)
-            print(f"UpdatePhoto: saved value={candidate.photo_url_direct}")
+            
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    "UPDATE elections_candidate SET photo_url_direct = %s WHERE id = %s",
+                    [photo_url, pk]
+                )
+                cursor.execute(
+                    "SELECT id, full_name, photo_url_direct FROM elections_candidate WHERE id = %s",
+                    [pk]
+                )
+                row = cursor.fetchone()
+                print(f"UpdatePhoto: saved={row}")
+            
             return Response({
                 'message': 'Photo updated successfully',
-                'photo_url_direct': candidate.photo_url_direct,
-                'photo_url': candidate.photo_url_direct,
+                'photo_url_direct': photo_url,
+                'photo_url': photo_url,
             })
-        except Candidate.DoesNotExist:
-            return Response({'error': 'Candidate not found'}, status=404)
         except Exception as e:
             print(f"UpdatePhoto Error: {e}")
             return Response({'error': str(e)}, status=500)

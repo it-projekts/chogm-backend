@@ -69,21 +69,31 @@ class CandidateSerializer(serializers.ModelSerializer):
     def get_vote_count(self, obj):
         return obj.votes.count()
 
-    def get_photo_url(self, obj):
-        if obj.photo_url_direct:
-            return obj.photo_url_direct
-        if not obj.photo:
-            return None
-        try:
-            url = str(obj.photo.url)
-            if url.startswith('http'):
-                return url
-            request = self.context.get('request')
-            if request:
-                return request.build_absolute_uri(url)
+def get_photo_url(self, obj):
+    try:
+        from django.db import connection
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT photo_url_direct FROM elections_candidate WHERE id = %s",
+                [obj.id]
+            )
+            row = cursor.fetchone()
+            if row and row[0]:
+                return row[0]
+    except Exception:
+        pass
+    if not obj.photo:
+        return None
+    try:
+        url = str(obj.photo.url)
+        if url.startswith('http'):
             return url
-        except Exception:
-            return None
+        request = self.context.get('request')
+        if request:
+            return request.build_absolute_uri(url)
+        return url
+    except Exception:
+        return None
 
     def create(self, validated_data):
         photo_url_direct = validated_data.get('photo_url_direct', None)
